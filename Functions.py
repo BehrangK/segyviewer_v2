@@ -9,14 +9,39 @@ from skimage.filters import sobel
 import numpy as np
 from scipy.signal import  lfilter
 import cmath
+from scipy.signal.signaltools import hilbert
+from scipy.signal import butter
+
 
 def do_filter(x,file_name):
     #file_name=filters.value
     
     data = np.load(file_name, fix_imports=True, encoding='bytes') # array containing dict, dtype 'object'    
     b,a=data['ba']
-    for i in range(x.shape[-1]):    
-        x[...,i]= lfilter(b, a, x[...,i])
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+            x[...,i]= lfilter(b, a, x[...,i])
+    else:
+        x=lfilter(b, a, x)
+    return(x)
+
+
+def lowpass(x,d,order=6):
+    b, a = butter(order, d, 'lowpass', fs=1000)
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+            x[...,i]= lfilter(b, a, x[...,i])
+    else:
+        x=lfilter(b, a, x)
+    return(x)
+
+def highpass(x,d,order=6):
+    b, a = butter(order, d, 'highpass', fs=1000)
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+            x[...,i]= lfilter(b, a, x[...,i])
+    else:
+        x=lfilter(b, a, x)
     return(x)
 
 
@@ -67,13 +92,18 @@ def calcPhaseShift_trace(x,d):
 def calcPhaseShift(x,d):
     #d=att_par.value
     #print(d)
+    x=np.squeeze(x)
     attrib = x.copy()
-    for i in range(x.shape[-1]):    
-            attrib[...,i]= calcPhaseShift_trace(x[...,i],d)
+    #print(x.ndim)
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+                attrib[...,i]= calcPhaseShift_trace(x[...,i],d)
+    else:
+        attrib=calcPhaseShift_trace(x,d)
     return (attrib)
 
-def calcFirstDerivative_trace(y): #x:time sample y: trace
-    x=TimeSamples
+def calcFirstDerivative_trace(x,y): #x:time sample y: trace
+    #x=TimeSamples
     dy = np.zeros(y.shape,np.float)
     dy[0:-1] = np.diff(y)/np.diff(x)
     dy[-1] = (y[-1] - y[-2])/(x[-1] - x[-2])
@@ -92,7 +122,7 @@ def calcCumulativeSum(x):
     """
     return np.cumsum(x, axis=0)
 
-def calcFirstDerivative(x):
+def calcFirstDerivative(x,y):
     """
     Calculate first derivative attribute
     Args:
@@ -101,8 +131,11 @@ def calcFirstDerivative(x):
         first-derivative attribute as 3D matrix
     """
     attrib = x.copy()
-    for i in range(x.shape[-1]):    
-        attrib[...,i]= calcFirstDerivative_trace(x[...,i])
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+            attrib[...,i]= calcFirstDerivative_trace(x[...,i],y)
+    else:
+        attrib=calcFirstDerivative_trace(x,y)
     return attrib
 
 def calcInstanEnvelop(x):
@@ -172,7 +205,7 @@ def calcInstanCosPhase(x):
     #
     return attrib
 
-def calc_att(x,att='Phase Shift',d=0):
+def calc_att(x,y,att='Phase Shift',d=0):
     #att=attribute.value
     y=x.copy()
     if att=='Phase Shift':
@@ -183,7 +216,7 @@ def calc_att(x,att='Phase Shift',d=0):
     elif att=='CumulativeSum':
         y=calcCumulativeSum(x)
     elif att=='FirstDerivative':
-        y=calcFirstDerivative(x)
+        y=calcFirstDerivative(x,y)
     elif att=='InstanEnvelop':
         y=calcInstanEnvelop(x)
     elif att=='InstanQuadrature':
@@ -194,4 +227,10 @@ def calc_att(x,att='Phase Shift',d=0):
         y=calcInstanFrequency(x)
     elif att=='InstanCosPhase':
         y=calcInstanCosPhase(x)
+    elif att=='Low Pass':
+        y=lowpass(x,d)
+    elif att=='High Pass':
+        y=highpass(x,d)
+    else:
+        raise NameError('Could not find the Attribute name:'+att)
     return(y)
