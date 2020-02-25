@@ -5,11 +5,13 @@ Created on Mon Feb 24 08:41:06 2020
 @author: koushb
 """
 
+from skimage.filters import sobel
+import numpy as np
+from scipy.signal import  lfilter
+import cmath
 
-
-
-def do_filter(x):
-    file_name=filters.value
+def do_filter(x,file_name):
+    #file_name=filters.value
     
     data = np.load(file_name, fix_imports=True, encoding='bytes') # array containing dict, dtype 'object'    
     b,a=data['ba']
@@ -62,8 +64,8 @@ def calcPhaseShift_trace(x,d):
     ## Reverse Fourier transform
     newSignal = np.fft.irfft(newSignalFFT,x.shape[0])
     return newSignal
-def calcPhaseShift(x):
-    d=att_par.value
+def calcPhaseShift(x,d):
+    #d=att_par.value
     #print(d)
     attrib = x.copy()
     for i in range(x.shape[-1]):    
@@ -170,12 +172,12 @@ def calcInstanCosPhase(x):
     #
     return attrib
 
-def calc_att(x):
-    att=attribute.value
+def calc_att(x,att='Phase Shift',d=0):
+    #att=attribute.value
     y=x.copy()
     if att=='Phase Shift':
         #print('Phase')
-        y=calcPhaseShift(x)
+        y=calcPhaseShift(x,d)
     elif att=='Edge Detection':
         y=calcEdge_detection(x)
     elif att=='CumulativeSum':
