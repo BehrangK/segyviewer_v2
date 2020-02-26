@@ -102,11 +102,15 @@ def calcPhaseShift(x,d):
         attrib=calcPhaseShift_trace(x,d)
     return (attrib)
 
-def calcFirstDerivative_trace(x,y): #x:time sample y: trace
+def calcFirstDerivative_trace(y,x): #x:time sample y: trace
     #x=TimeSamples
+    
     dy = np.zeros(y.shape,np.float)
+    #dy = np.empty_like(x)
+  
     dy[0:-1] = np.diff(y)/np.diff(x)
     dy[-1] = (y[-1] - y[-2])/(x[-1] - x[-2])
+
     return(dy)
 
 
@@ -130,7 +134,9 @@ def calcFirstDerivative(x,y):
     Return:
         first-derivative attribute as 3D matrix
     """
+    x=np.squeeze(x)
     attrib = x.copy()
+    #print(x.shape,y.shape)
     if x.ndim > 1:
         for i in range(x.shape[-1]):    
             attrib[...,i]= calcFirstDerivative_trace(x[...,i],y)
@@ -151,17 +157,6 @@ def calcInstanEnvelop(x):
 
     return attrib
 
-def calcInstanQuadrature(x):
-    """
-    Calculate instantaneous quadrature attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        Instantaneous quadrature attribute as 3D matrix
-    """
-
-    attrib = np.imag(hilbert(x, axis=0))
-    return attrib
 
 def calcInstanPhase(x):
     """
@@ -205,32 +200,46 @@ def calcInstanCosPhase(x):
     #
     return attrib
 
+def calcInstanQuadrature(x):
+    """
+    Calculate instantaneous quadrature attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        Instantaneous quadrature attribute as 3D matrix
+    """
+
+    attrib = np.imag(hilbert(x, axis=0))
+    return attrib
+
+
 def calc_att(x,y,att='Phase Shift',d=0):
     #att=attribute.value
-    y=x.copy()
+    #print(x.shape,y.shape)
+    r=x.copy()
     if att=='Phase Shift':
         #print('Phase')
-        y=calcPhaseShift(x,d)
+        r=calcPhaseShift(x,d)
     elif att=='Edge Detection':
-        y=calcEdge_detection(x)
+        r=calcEdge_detection(x)
     elif att=='CumulativeSum':
-        y=calcCumulativeSum(x)
+        r=calcCumulativeSum(x)
     elif att=='FirstDerivative':
-        y=calcFirstDerivative(x,y)
+        r=calcFirstDerivative(x,y)
     elif att=='InstanEnvelop':
-        y=calcInstanEnvelop(x)
+        r=calcInstanEnvelop(x)
     elif att=='InstanQuadrature':
-        y=calcInstanQuadrature(x)
+        r=calcInstanQuadrature(x)
     elif att=='InstanPhase':
-        y=calcInstanPhase(x)
+        r=calcInstanPhase(x)
     elif att=='InstanFrequency':
-        y=calcInstanFrequency(x)
+        r=calcInstanFrequency(x)
     elif att=='InstanCosPhase':
-        y=calcInstanCosPhase(x)
+        r=calcInstanCosPhase(x)
     elif att=='Low Pass':
-        y=lowpass(x,d)
+        r=lowpass(x,d)
     elif att=='High Pass':
-        y=highpass(x,d)
+        r=highpass(x,d)
     else:
         raise NameError('Could not find the Attribute name:'+att)
-    return(y)
+    return(r)
