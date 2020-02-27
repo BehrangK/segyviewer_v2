@@ -26,21 +26,29 @@ def do_filter(x,file_name):
     return(x)
 
 
-def lowpass(x,d,order=6):
-    b, a = butter(order, d, 'lowpass', fs=1000)
+def low_high_pass(x,a,b):
     if x.ndim > 1:
         for i in range(x.shape[-1]):    
-            x[...,i]= lfilter(b, a, x[...,i])
+            x[...,i]= low_high_pass(x[...,i],a,b)
     else:
         x=lfilter(b, a, x)
     return(x)
-
-def highpass(x,d,order=6):
-    b, a = butter(order, d, 'highpass', fs=1000)
+    
+def lowpass(x,a,b):    
     if x.ndim > 1:
         for i in range(x.shape[-1]):    
-            x[...,i]= lfilter(b, a, x[...,i])
+            x[...,i]= lowpass(x[...,i],d,order)
     else:
+        b, a = butter(order, d, 'lowpass', fs=1000)
+        x=lfilter(b, a, x)
+    return(x)
+
+def highpass(x,d,order=6):    
+    if x.ndim > 1:
+        for i in range(x.shape[-1]):    
+            x[...,i]= highpass(x[...,i],d,order)
+    else:
+        
         x=lfilter(b, a, x)
     return(x)
 
@@ -48,24 +56,18 @@ def highpass(x,d,order=6):
 # from https://github.com/geopyteam/cognitivegeo/blob/master/cognitivegeo/src/seismic/attribute.py
 
 def calcEdge_detection(x):
-    x=  sobel(x)
     
-#    i=att_par.value
-#    #['Scipy Sobel','Skimage Sobel','Skimage Roberts','Skimage scharr','Skimage prewitt']
-#    if i=='Scipy Sobel':        
-#        x = ndimage.sobel(x)
-#    elif i=='Skimage Sobel':
-#        x=  sobel(x)
-#    elif i=='Skimage Roberts':
-#        x=  roberts(x)
-#    elif i=='Skimage scharr':
-#        x=  scharr(x)
-#    elif i=='Skimage prewitt':
-#        x=  prewitt(x)
-#    else:
-#        pass
-#from skimage.filters import roberts, sobel, sobel_h, sobel_v, scharr, \
-#    scharr_h, scharr_v, prewitt, prewitt_v, prewitt_h, farid_v, farid_h
+    x=np.squeeze(x)
+    if x.ndim > 2:
+        #print(x.shape)
+        for i in range(x.shape[-1]):    
+            x[...,i]= calcEdge_detection(x[...,i])    
+    else:
+        x=sobel(x)
+    return x
+    
+    
+
 
     return(x)
 
@@ -241,9 +243,13 @@ def calc_att(x,y,att='Phase Shift',d=0):
     elif att=='InstanCosPhase':
         r=calcInstanCosPhase(x)
     elif att=='Low Pass':
-        r=lowpass(x,d)
+        order=6
+        b, a = butter(order, d, 'lowpass', fs=1000)
+        r=low_high_pass(x,a,b)
     elif att=='High Pass':
-        r=highpass(x,d)
+        order=6
+        b, a = butter(order, d, 'highpass', fs=1000)
+        r=low_high_pass(x,a,b)
     else:
         raise NameError('Could not find the Attribute name:'+att)
     return(r)
