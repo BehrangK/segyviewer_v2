@@ -69,6 +69,17 @@ def calcEdge_detection(x):
 
     return(x)
 
+def calcCumulativeSum(x):
+    """
+    Calculate cusum attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        cusum attribute as 3D matrix
+    """
+    return np.cumsum(x, axis=0)
+
+
 def calcPhaseShift_trace(x,d):
     #from https://stackoverflow.com/questions/52179919/amplitude-and-phase-spectrum-shifting-the-phase-leaving-amplitude-untouched
     
@@ -89,18 +100,20 @@ def calcPhaseShift_trace(x,d):
     ## Reverse Fourier transform
     newSignal = np.fft.irfft(newSignalFFT,x.shape[0])
     return newSignal
+
+
 def calcPhaseShift(x,d):
-    #d=att_par.value
-    #print(d)
     x=np.squeeze(x)
-    attrib = x.copy()
-    #print(x.ndim)
     if x.ndim > 1:
+        #print(x.shape)
         for i in range(x.shape[-1]):    
-                attrib[...,i]= calcPhaseShift_trace(x[...,i],d)
+            x[...,i]= calcPhaseShift_trace(x[...,i],d)    
     else:
-        attrib=calcPhaseShift_trace(x,d)
-    return (attrib)
+        x=calcPhaseShift(x,y)
+    return x
+
+   
+
 
 def calcFirstDerivative_trace(y,x): #x:time sample y: trace
     #x=TimeSamples
@@ -115,17 +128,6 @@ def calcFirstDerivative_trace(y,x): #x:time sample y: trace
 
 
 
-
-def calcCumulativeSum(x):
-    """
-    Calculate cusum attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        cusum attribute as 3D matrix
-    """
-    return np.cumsum(x, axis=0)
-
 def calcFirstDerivative(x,y):
     """
     Calculate first derivative attribute
@@ -135,14 +137,16 @@ def calcFirstDerivative(x,y):
         first-derivative attribute as 3D matrix
     """
     x=np.squeeze(x)
-    attrib = x.copy()
-    #print(x.shape,y.shape)
     if x.ndim > 1:
+        #print(x.shape)
         for i in range(x.shape[-1]):    
-            attrib[...,i]= calcFirstDerivative_trace(x[...,i],y)
+            x[...,i]= calcFirstDerivative(x[...,i],y)    
     else:
-        attrib=calcFirstDerivative_trace(x,y)
-    return attrib
+        x=calcFirstDerivative_trace(x,y)
+    return x
+
+
+
 
 def calcInstanEnvelop(x):
     """
