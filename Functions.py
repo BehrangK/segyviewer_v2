@@ -150,7 +150,7 @@ def calcFirstDerivative(x,y):
 
 
 
-def calcInstanEnvelop(x):
+def calcInstantEnvelope(x,d):
     """
     Calculate instantaneous envelop attribute
     Args:
@@ -158,13 +158,15 @@ def calcInstanEnvelop(x):
     Return:
         Instantaneous envelop attribute as 3D matrix
     """
-
-    attrib = np.abs(hilbert(x, axis=0))
+    #https://www.gaussianwaves.com/2017/04/extracting-instantaneous-amplitude-phase-frequency-hilbert-transform/
+    
+    Z=hilbert(x, axis=0,N=d)
+    attrib = np.abs(Z)
 
     return attrib
 
 
-def calcInstanPhase(x):
+def calcInstantPhase(x,d):
     """
     Calculate instantaneous phase attribute
     Args:
@@ -172,13 +174,16 @@ def calcInstanPhase(x):
     Return:
         Instantaneous phase attribute as 3D matrix
     """
+    Z=hilbert(x, axis=0,N=d)
+    inst_phase = np.unwrap(np.angle(Z))#inst phase
+    #attrib = np.diff(inst_phase)/(2*np.pi)*fs #inst frequency
 
-    attrib = np.angle(hilbert(x, axis=0))
-    attrib = attrib * 180.0 / np.pi
+    #attrib = np.angle(hilbert(x, axis=0,N=d))
+    attrib = inst_phase * 180.0 / np.pi
     #
     return attrib
 
-def calcInstanFrequency(x):
+def calcInstantFrequency(x,d):
     """
     Calculate instantaneous frequency attribute
     Args:
@@ -186,13 +191,16 @@ def calcInstanFrequency(x):
     Return:
         Instantaneous frequency attribute as 3D matrix
     """
+    Z=hilbert(x, axis=0,N=d)
+    inst_phase = np.unwrap(np.angle(Z))#inst phase
+    attrib = np.diff(inst_phase)/(2*np.pi)*1000 #inst frequency
 
-    instphase = np.unwrap(np.angle(hilbert(x, axis=0)), axis=0) * 0.5 / np.pi
-    attrib = np.zeros(np.shape(x))
-    attrib[1:-1, ...] = 0.5 * (instphase[2:,...] - instphase[0:-2,...])
+    #instphase = np.unwrap(np.angle(hilbert(x, axis=0,,N=d)), axis=0) * 0.5 / np.pi
+    #attrib = np.zeros(np.shape(x))
+    #attrib[1:-1, ...] = 0.5 * (instphase[2:,...] - instphase[0:-2,...])
     return attrib
 
-def calcInstanCosPhase(x):
+def calcInstantCosPhase(x,d):
     """
     Calculate instantaneous cosine of phase attribute
     Args:
@@ -200,13 +208,13 @@ def calcInstanCosPhase(x):
     Return:
         Cosine of phase attribute as 3D matrix
     """
-
-    attrib = np.angle(hilbert(x, axis=0))
+    Z=hilbert(x, axis=0,N=d)
+    attrib = np.angle(Z)
     attrib = np.cos(attrib)
     #
     return attrib
 
-def calcInstanQuadrature(x):
+def calcInstantQuadrature(x,d):
     """
     Calculate instantaneous quadrature attribute
     Args:
@@ -214,8 +222,8 @@ def calcInstanQuadrature(x):
     Return:
         Instantaneous quadrature attribute as 3D matrix
     """
-
-    attrib = np.imag(hilbert(x, axis=0))
+    Z=hilbert(x, axis=0,N=d)
+    attrib = np.imag(Z)
     return attrib
 
 
@@ -232,16 +240,16 @@ def calc_att(x,y,att='Phase Shift',d=0):
         r=calcCumulativeSum(x)
     elif att=='FirstDerivative':
         r=calcFirstDerivative(x,y)
-    elif att=='InstanEnvelop':
-        r=calcInstanEnvelop(x)
-    elif att=='InstanQuadrature':
-        r=calcInstanQuadrature(x)
-    elif att=='InstanPhase':
-        r=calcInstanPhase(x)
-    elif att=='InstanFrequency':
-        r=calcInstanFrequency(x)
-    elif att=='InstanCosPhase':
-        r=calcInstanCosPhase(x)
+    elif att=='InstantEnvelope':
+        r=calcInstantEnvelope(x,d)
+    elif att=='InstantQuadrature':
+        r=calcInstantQuadrature(x,d)
+    elif att=='InstantPhase':
+        r=calcInstantPhase(x,d)
+    elif att=='InstantFrequency':
+        r=calcInstantFrequency(x,d)
+    elif att=='InstantCosPhase':
+        r=calcInstantCosPhase(x,d)
     elif att=='Low Pass':
         order=6
         b, a = butter(order, d, 'lowpass', fs=1000)
