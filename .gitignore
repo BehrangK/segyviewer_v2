@@ -1,4 +1,5 @@
-OpendTect-External-Attributes/
+OpendTect-External-Attributes/.
+tests/.
 .ipynb_checkpoints/
 .ipynb_checkpoints\Untitled-checkpoint.ipynb
 .ipynb_checkpoints\segyviewer-checkpoint.ipynb

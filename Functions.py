@@ -26,29 +26,21 @@ def do_filter(x,file_name):
     return(x)
 
 
-def low_high_pass(x,a,b):
+def lowpass(x,d,order=6):
+    b, a = butter(order, d, 'lowpass', fs=1000)
     if x.ndim > 1:
         for i in range(x.shape[-1]):    
-            x[...,i]= low_high_pass(x[...,i],a,b)
+            x[...,i]= lfilter(b, a, x[...,i])
     else:
-        x=lfilter(b, a, x)
-    return(x)
-    
-def lowpass(x,a,b):    
-    if x.ndim > 1:
-        for i in range(x.shape[-1]):    
-            x[...,i]= lowpass(x[...,i],d,order)
-    else:
-        b, a = butter(order, d, 'lowpass', fs=1000)
         x=lfilter(b, a, x)
     return(x)
 
-def highpass(x,d,order=6):    
+def highpass(x,d,order=6):
+    b, a = butter(order, d, 'highpass', fs=1000)
     if x.ndim > 1:
         for i in range(x.shape[-1]):    
-            x[...,i]= highpass(x[...,i],d,order)
+            x[...,i]= lfilter(b, a, x[...,i])
     else:
-        
         x=lfilter(b, a, x)
     return(x)
 
@@ -56,31 +48,26 @@ def highpass(x,d,order=6):
 # from https://github.com/geopyteam/cognitivegeo/blob/master/cognitivegeo/src/seismic/attribute.py
 
 def calcEdge_detection(x):
+    x=  sobel(x)
     
-    x=np.squeeze(x)
-    if x.ndim > 2:
-        #print(x.shape)
-        for i in range(x.shape[-1]):    
-            x[...,i]= calcEdge_detection(x[...,i])    
-    else:
-        x=sobel(x)
-    return x
-    
-    
-
+#    i=att_par.value
+#    #['Scipy Sobel','Skimage Sobel','Skimage Roberts','Skimage scharr','Skimage prewitt']
+#    if i=='Scipy Sobel':        
+#        x = ndimage.sobel(x)
+#    elif i=='Skimage Sobel':
+#        x=  sobel(x)
+#    elif i=='Skimage Roberts':
+#        x=  roberts(x)
+#    elif i=='Skimage scharr':
+#        x=  scharr(x)
+#    elif i=='Skimage prewitt':
+#        x=  prewitt(x)
+#    else:
+#        pass
+#from skimage.filters import roberts, sobel, sobel_h, sobel_v, scharr, \
+#    scharr_h, scharr_v, prewitt, prewitt_v, prewitt_h, farid_v, farid_h
 
     return(x)
-
-def calcCumulativeSum(x):
-    """
-    Calculate cusum attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        cusum attribute as 3D matrix
-    """
-    return np.cumsum(x, axis=0)
-
 
 def calcPhaseShift_trace(x,d):
     #from https://stackoverflow.com/questions/52179919/amplitude-and-phase-spectrum-shifting-the-phase-leaving-amplitude-untouched
@@ -102,33 +89,38 @@ def calcPhaseShift_trace(x,d):
     ## Reverse Fourier transform
     newSignal = np.fft.irfft(newSignalFFT,x.shape[0])
     return newSignal
-
-
 def calcPhaseShift(x,d):
+    #d=att_par.value
+    #print(d)
     x=np.squeeze(x)
+    attrib = x.copy()
+    #print(x.ndim)
     if x.ndim > 1:
-        #print(x.shape)
         for i in range(x.shape[-1]):    
-            x[...,i]= calcPhaseShift_trace(x[...,i],d)    
+                attrib[...,i]= calcPhaseShift_trace(x[...,i],d)
     else:
-        x=calcPhaseShift(x,y)
-    return x
+        attrib=calcPhaseShift_trace(x,d)
+    return (attrib)
 
-   
-
-
-def calcFirstDerivative_trace(y,x): #x:time sample y: trace
+def calcFirstDerivative_trace(x,y): #x:time sample y: trace
     #x=TimeSamples
-    
     dy = np.zeros(y.shape,np.float)
-    #dy = np.empty_like(x)
-  
     dy[0:-1] = np.diff(y)/np.diff(x)
     dy[-1] = (y[-1] - y[-2])/(x[-1] - x[-2])
-
     return(dy)
 
 
+
+
+def calcCumulativeSum(x):
+    """
+    Calculate cusum attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        cusum attribute as 3D matrix
+    """
+    return np.cumsum(x, axis=0)
 
 def calcFirstDerivative(x,y):
     """
@@ -138,19 +130,15 @@ def calcFirstDerivative(x,y):
     Return:
         first-derivative attribute as 3D matrix
     """
-    x=np.squeeze(x)
+    attrib = x.copy()
     if x.ndim > 1:
-        #print(x.shape)
         for i in range(x.shape[-1]):    
-            x[...,i]= calcFirstDerivative(x[...,i],y)    
+            attrib[...,i]= calcFirstDerivative_trace(x[...,i],y)
     else:
-        x=calcFirstDerivative_trace(x,y)
-    return x
+        attrib=calcFirstDerivative_trace(x,y)
+    return attrib
 
-
-
-
-def calcInstantEnvelope(x,d):
+def calcInstanEnvelop(x):
     """
     Calculate instantaneous envelop attribute
     Args:
@@ -158,63 +146,12 @@ def calcInstantEnvelope(x,d):
     Return:
         Instantaneous envelop attribute as 3D matrix
     """
-    #https://www.gaussianwaves.com/2017/04/extracting-instantaneous-amplitude-phase-frequency-hilbert-transform/
-    
-    Z=hilbert(x, axis=0,N=d)
-    attrib = np.abs(Z)
+
+    attrib = np.abs(hilbert(x, axis=0))
 
     return attrib
 
-
-def calcInstantPhase(x,d):
-    """
-    Calculate instantaneous phase attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        Instantaneous phase attribute as 3D matrix
-    """
-    Z=hilbert(x, axis=0,N=d)
-    inst_phase = np.unwrap(np.angle(Z))#inst phase
-    #attrib = np.diff(inst_phase)/(2*np.pi)*fs #inst frequency
-
-    #attrib = np.angle(hilbert(x, axis=0,N=d))
-    attrib = inst_phase * 180.0 / np.pi
-    #
-    return attrib
-
-def calcInstantFrequency(x,d):
-    """
-    Calculate instantaneous frequency attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        Instantaneous frequency attribute as 3D matrix
-    """
-    Z=hilbert(x, axis=0,N=d)
-    inst_phase = np.unwrap(np.angle(Z))#inst phase
-    attrib = np.diff(inst_phase)/(2*np.pi)*1000 #inst frequency
-
-    #instphase = np.unwrap(np.angle(hilbert(x, axis=0,,N=d)), axis=0) * 0.5 / np.pi
-    #attrib = np.zeros(np.shape(x))
-    #attrib[1:-1, ...] = 0.5 * (instphase[2:,...] - instphase[0:-2,...])
-    return attrib
-
-def calcInstantCosPhase(x,d):
-    """
-    Calculate instantaneous cosine of phase attribute
-    Args:
-        x: seismic data in 3D matrix [Z/XL/IL]
-    Return:
-        Cosine of phase attribute as 3D matrix
-    """
-    Z=hilbert(x, axis=0,N=d)
-    attrib = np.angle(Z)
-    attrib = np.cos(attrib)
-    #
-    return attrib
-
-def calcInstantQuadrature(x,d):
+def calcInstanQuadrature(x):
     """
     Calculate instantaneous quadrature attribute
     Args:
@@ -222,42 +159,78 @@ def calcInstantQuadrature(x,d):
     Return:
         Instantaneous quadrature attribute as 3D matrix
     """
-    Z=hilbert(x, axis=0,N=d)
-    attrib = np.imag(Z)
+
+    attrib = np.imag(hilbert(x, axis=0))
     return attrib
 
+def calcInstanPhase(x):
+    """
+    Calculate instantaneous phase attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        Instantaneous phase attribute as 3D matrix
+    """
+
+    attrib = np.angle(hilbert(x, axis=0))
+    attrib = attrib * 180.0 / np.pi
+    #
+    return attrib
+
+def calcInstanFrequency(x):
+    """
+    Calculate instantaneous frequency attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        Instantaneous frequency attribute as 3D matrix
+    """
+
+    instphase = np.unwrap(np.angle(hilbert(x, axis=0)), axis=0) * 0.5 / np.pi
+    attrib = np.zeros(np.shape(x))
+    attrib[1:-1, ...] = 0.5 * (instphase[2:,...] - instphase[0:-2,...])
+    return attrib
+
+def calcInstanCosPhase(x):
+    """
+    Calculate instantaneous cosine of phase attribute
+    Args:
+        x: seismic data in 3D matrix [Z/XL/IL]
+    Return:
+        Cosine of phase attribute as 3D matrix
+    """
+
+    attrib = np.angle(hilbert(x, axis=0))
+    attrib = np.cos(attrib)
+    #
+    return attrib
 
 def calc_att(x,y,att='Phase Shift',d=0):
     #att=attribute.value
-    #print(x.shape,y.shape)
-    r=x.copy()
+    y=x.copy()
     if att=='Phase Shift':
         #print('Phase')
-        r=calcPhaseShift(x,d)
+        y=calcPhaseShift(x,d)
     elif att=='Edge Detection':
-        r=calcEdge_detection(x)
+        y=calcEdge_detection(x)
     elif att=='CumulativeSum':
-        r=calcCumulativeSum(x)
+        y=calcCumulativeSum(x)
     elif att=='FirstDerivative':
-        r=calcFirstDerivative(x,y)
-    elif att=='InstantEnvelope':
-        r=calcInstantEnvelope(x,d)
-    elif att=='InstantQuadrature':
-        r=calcInstantQuadrature(x,d)
-    elif att=='InstantPhase':
-        r=calcInstantPhase(x,d)
-    elif att=='InstantFrequency':
-        r=calcInstantFrequency(x,d)
-    elif att=='InstantCosPhase':
-        r=calcInstantCosPhase(x,d)
+        y=calcFirstDerivative(x,y)
+    elif att=='InstanEnvelop':
+        y=calcInstanEnvelop(x)
+    elif att=='InstanQuadrature':
+        y=calcInstanQuadrature(x)
+    elif att=='InstanPhase':
+        y=calcInstanPhase(x)
+    elif att=='InstanFrequency':
+        y=calcInstanFrequency(x)
+    elif att=='InstanCosPhase':
+        y=calcInstanCosPhase(x)
     elif att=='Low Pass':
-        order=6
-        b, a = butter(order, d, 'lowpass', fs=1000)
-        r=low_high_pass(x,a,b)
+        y=lowpass(x,d)
     elif att=='High Pass':
-        order=6
-        b, a = butter(order, d, 'highpass', fs=1000)
-        r=low_high_pass(x,a,b)
+        y=highpass(x,d)
     else:
         raise NameError('Could not find the Attribute name:'+att)
-    return(r)
+    return(y)
