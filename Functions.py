@@ -119,7 +119,7 @@ def calcPhaseShift(x,d):
         for i in range(x.shape[-1]):    
             x[...,i]= calcPhaseShift(x[...,i],d)    
     else:
-        x=calcPhaseShift_trace(x,y)
+        x=calcPhaseShift_trace(x,d)
     return x
 
    
@@ -225,7 +225,7 @@ def calcInstantCosPhase(x):
     #
     return attrib
 
-def calcInstantQuadrature(x,d):
+def calcInstantQuadrature(x):
     """
     Calculate instantaneous quadrature attribute
     Args:
