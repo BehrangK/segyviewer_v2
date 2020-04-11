@@ -271,6 +271,11 @@ def calc_att(x,y,att='Phase Shift',d=0):
         order=6
         b, a = butter(order, d, 'highpass', fs=1000)
         r=low_high_pass(x,a,b)
+    elif att=='Relative Acoustic Impedance':
+        order=6
+        b, a = butter(order, d, 'highpass', fs=1000)
+        r=calcCumulativeSum(x)
+        r=low_high_pass(r,a,b)
     else:
         raise NameError('Could not find the Attribute name:'+att)
     return(r)
