@@ -1,5 +1,9 @@
 #test folder
 tests
+tests/
+tests\
+tests\.
+tests/.
 
 
 # Byte-compiled / optimized / DLL files
